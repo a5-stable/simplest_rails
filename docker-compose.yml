@@ -1,0 +1,38 @@
+version: "2"
+services:
+  db:
+    image: mysql:8.0.23
+    ports:
+      - 4307:3306
+    volumes:
+      - mysql-data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+    command: --default-authentication-plugin=mysql_native_password
+  app: &app
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    stdin_open: true
+    tty: true
+    privileged: true
+    volumes:
+      - .:/simplest_rails:cached
+      - /app/vendor
+      - /app/tmp
+      - /app/log
+      - /app/.git
+    command: >
+      /bin/bash -c "
+        bundle install &&
+        rm -rf tmp/pids/server.pid &&
+        bundle exec rails db:migrate &&
+        bundle exec rails s -p 3000 -b '0.0.0.0'
+      "
+    ports:
+      - "80:3000"
+    depends_on:
+      - db
+volumes:
+  mysql-data:
+    driver: local
